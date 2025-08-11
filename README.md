@@ -1,188 +1,105 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mi Cuenta - Prenoticia</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #fefefe;
-      margin: 0;
-      padding: 20px;
-      color: #222;
+<style>
+  /* Barra flotante, ocupa todo el ancho */
+  #ventana-flotante {
+    position: fixed;
+    top: 75px;
+    left: 0;
+    width: 100vw;
+    height: 50px;
+    background: #f68e02;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 49;
+
+    display: flex;
+    justify-content: center; /* centra el contenido */
+    align-items: center;
+
+    /* Para animación de deslizar */
+    transform: translateY(0);
+    opacity: 1;
+    transition: top 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
+  }
+
+  /* Estado oculto: barra deslizada hacia arriba y oculta */
+  #ventana-flotante.oculto {
+    opacity: 0;
+    transform: translateY(-100%);
+    pointer-events: none; /* para que no interfiera cuando está oculta */
+  }
+
+  /* Contenedor interno para limitar ancho y centrar contenido */
+  #ventana-flotante .contenido {
+    width: 100%;
+    max-width: 1090px;
+    height: 100%;
+  }
+
+  #ventana-flotante iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
+
+  /* Móvil: barra fija visible con top 50px, ancho total y sin bordes ni márgenes */
+  @media (max-width: 768px) {
+    #ventana-flotante {
+      top: 50px !important;
+      left: 0 !important;
+      width: 100vw !important;
+      border-radius: 0 !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
-    .panel-cuenta {
-      max-width: 700px;
-      margin: 0 auto;
-      background: #fff;
-      box-shadow: 0 2px 10px rgb(0 0 0 / 0.1);
-      border-radius: 8px;
-      padding: 30px;
-    }
-    h1 {
-      text-align: center;
-      color: #f68e02;
-      margin-bottom: 30px;
-    }
-    .fila {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 15px;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 10px;
-    }
-    .fila:last-child {
-      border-bottom: none;
-    }
-    .etiqueta {
-      font-weight: bold;
-      color: #555;
-      min-width: 180px;
-    }
-    .valor {
-      flex: 1;
-      color: #111;
-    }
-    .verificado {
-      color: green;
-      font-weight: bold;
-      margin-left: 8px;
-      font-size: 18px;
-      vertical-align: middle;
-    }
-    .btn-baja {
-      display: block;
-      width: 100%;
-      padding: 12px;
-      background-color: #bb6c00;
-      color: white;
-      font-weight: bold;
-      text-align: center;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      text-decoration: none;
-      margin-top: 30px;
-      transition: background-color 0.3s ease;
-    }
-    .btn-baja:hover {
-      background-color: #a55a00;
-      text-decoration: none;
-      color: white;
-    }
-    .info-legal {
-      margin-top: 40px;
-      background: #fff4e5;
-      padding: 20px;
-      border-radius: 6px;
-      font-size: 14px;
-      line-height: 1.5;
-      color: #663d00;
-    }
-  </style>
-</head>
-<body>
-  <div class="panel-cuenta" id="panelCuenta">
-    <h1>Mi Cuenta</h1>
-    <div id="contenidoCuenta"></div>
+  }
+</style>
+
+<div id="ventana-flotante">
+  <div class="contenido">
+    <iframe src="https://daviddanaher.github.io/Prenoticia/"></iframe>
   </div>
+</div>
 
-  <script>
-    // Simulamos usuarios, agrego "pais" y "monto" para suscripción
-    const usuarios = {
-      "mauricioacostacom@gmail.com": {
-        activo: true,
-        nombre: "Mauricio",
-        apellido: "Acosta Danaher",
-        email: "mauricioacostacom@gmail.com",
-        medioPago: "Mercado Pago",
-        pais: "Argentina",
-        montoSuscripcion: "$2.000",
-        ultimoPago: "31 de julio de 2025",
-        proximoPago: "31 de septiembre de 2025",
-        emailVerificado: true
-      },
-      "luciacarpio20@gmail.com": {
-        activo: false,
-        nombre: "Maria",
-        apellido: "Carpio Peralta",
-        email: "luciacarpio20@gmail.com",
-        medioPago: "PayPal",
-        pais: "Chile",
-        montoSuscripcion: "$1.000",
-        ultimoPago: "15 de junio de 2025",
-        proximoPago: "15 de julio de 2025",
-        emailVerificado: false,
-        deuda: "$1.000"
-      }
-      // Podés agregar más usuarios acá
-    };
+<script>
+  const ventana = document.getElementById("ventana-flotante");
 
-    function mostrarPanel(usuario) {
-      const cont = document.getElementById("contenidoCuenta");
+  function esEscritorio() {
+    return window.innerWidth > 768;
+  }
 
-      if (!usuario) {
-        cont.innerHTML = `<p>No estás logueado. Por favor <a href="/login">iniciá sesión</a> para ver tu cuenta.</p>`;
-        return;
-      }
-
-      if (!usuario.activo) {
-        cont.innerHTML = `<p>Tu cuenta no está activa. Por favor regularizá tu situación.</p>
-          <p><b>Deuda actual:</b> ${usuario.deuda || "No disponible"}</p>`;
-        return;
-      }
-
-      // Info legal según país
-      let infoLegal = "";
-      switch (usuario.pais?.toLowerCase()) {
-        case "argentina":
-          infoLegal = `<p><b>Información legal para Argentina:</b> De acuerdo a la Ley de Defensa del Consumidor, tenés derecho a dar de baja tu suscripción en cualquier momento y sin penalización. Para solicitar la baja, usá el botón que figura abajo o contactanos a soporte.</p>`;
-          break;
-        case "peru":
-          infoLegal = `<p><b>Información legal para Perú:</b> Según la Ley de Protección al Consumidor, podés cancelar tu suscripción sin cargos adicionales y con derecho a recibir un comprobante. Contactá soporte si necesitás ayuda.</p>`;
-          break;
-        case "chile":
-          infoLegal = `<p><b>Información legal para Chile:</b> Conforme a la Ley del Consumidor, podés dar de baja tu suscripción en cualquier momento y solicitar la devolución proporcional de pagos anticipados si aplica.</p>`;
-          break;
-        default:
-          infoLegal = `<p><b>Información legal:</b> Podés gestionar tu suscripción según los términos y condiciones vigentes en tu país. Para más información, contactá soporte.</p>`;
-          break;
-      }
-
-      cont.innerHTML = `
-        <div class="fila"><div class="etiqueta">Nombre:</div><div class="valor">${usuario.nombre}</div></div>
-        <div class="fila"><div class="etiqueta">Apellido:</div><div class="valor">${usuario.apellido}</div></div>
-        <div class="fila"><div class="etiqueta">Email:</div><div class="valor">${usuario.email}
-          ${usuario.emailVerificado ? '<span class="verificado" title="Email verificado">✅</span>' : ''}
-        </div></div>
-        <div class="fila"><div class="etiqueta">Método de pago:</div><div class="valor">${usuario.medioPago || "No especificado"}</div></div>
-        <div class="fila"><div class="etiqueta">País:</div><div class="valor">${usuario.pais || "No especificado"}</div></div>
-        <div class="fila"><div class="etiqueta">Monto actual suscripción:</div><div class="valor">${usuario.montoSuscripcion || "No disponible"}</div></div>
-        <div class="fila"><div class="etiqueta">Último pago:</div><div class="valor">${usuario.ultimoPago || "No disponible"}</div></div>
-        <div class="fila"><div class="etiqueta">Próximo pago:</div><div class="valor">${usuario.proximoPago || "No disponible"}</div></div>
-
-        <a href="https://www.prenoticia.com/baja-suscripción" target="_blank" class="btn-baja">Dar de baja suscripción</a>
-
-        <div class="info-legal">${infoLegal}</div>
-      `;
+  function actualizarBarra() {
+    if (!esEscritorio()) {
+      // En móvil barra fija visible a top 50px sin márgenes ni bordes
+      ventana.classList.remove("oculto");
+      ventana.style.top = "50px";
+      ventana.style.left = "0";
+      ventana.style.width = "100vw";
+      ventana.style.borderRadius = "0";
+      return;
     }
 
-    window.onload = () => {
-      const usuarioLogueado = JSON.parse(localStorage.getItem("usuarioLogueado"));
-      if (!usuarioLogueado) {
-        mostrarPanel(null);
-        return;
-      }
-      // Buscamos la info del usuario por email en el objeto usuarios
-      const email = usuarioLogueado.email || usuarioLogueado.nombre?.toLowerCase() || null;
-      // En tu localStorage guardás el objeto completo, asumo que tiene el email:
-      let usuarioData = null;
-      if (usuarioLogueado.email && usuarios[usuarioLogueado.email]) {
-        usuarioData = usuarios[usuarioLogueado.email];
-      }
-      mostrarPanel(usuarioData);
-    };
-  </script>
-</body>
-</html>
+    const scrollY = window.pageYOffset;
+
+    if (scrollY === 0) {
+      // Parte superior: barra visible, top 75px sin margen extra
+      ventana.classList.remove("oculto");
+      ventana.style.top = "75px";
+      ventana.style.left = "0";
+      ventana.style.width = "100vw";
+      ventana.style.borderRadius = "0";
+    } else if (scrollY > 0 && scrollY < 200) {
+      // Scroll entre 0 y 200px: ocultar barra
+      ventana.classList.add("oculto");
+    } else if (scrollY >= 200) {
+      // Scroll mayor a 200px: barra visible, top 45px (margen flotante)
+      ventana.classList.remove("oculto");
+      ventana.style.top = "45px";
+      ventana.style.left = "0";
+      ventana.style.width = "100vw";
+      ventana.style.borderRadius = "0";
+    }
+  }
+
+  window.addEventListener("scroll", actualizarBarra);
+  window.addEventListener("load", actualizarBarra);
+  window.addEventListener("resize", actualizarBarra);
+</script>
